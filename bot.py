@@ -5,9 +5,9 @@ from bs4 import BeautifulSoup
 from pyrogram import Client, filters
 
 # Telegram Bot Credentials (Replace these values)
-API_ID = "1234567"  # https://my.telegram.org/apps se lein
-API_HASH = "your_api_hash_here"
-BOT_TOKEN = "your_bot_token_here"
+API_ID = int(os.getenv("API_ID"))  # Ensure it's an integer
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # Bot Initialization
 app = Client("terabox_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
