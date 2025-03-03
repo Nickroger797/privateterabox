@@ -74,7 +74,7 @@ async def healthcheck(request):
     return web.Response(text="Bot is running")
 
 async def start():
-    loop = asyncio.get_event_loop()  # ✅ सही तरीका
+    loop = asyncio.get_running_loop()  # ✅ पहले से चल रहे loop को यूज़ करें
     loop.create_task(app.run())  # Pyrogram Bot Start
 
     # Start Web Server (For Koyeb Health Check)
@@ -85,5 +85,6 @@ async def start():
     await site.start()
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()  # ✅ पहले से चल रहे loop को यूज़ करें
-    loop.run_until_complete(start())  # ✅ asyncio.run() की जगह use करें
+    asyncio.run(start())  # ❌ इसे हटाएं
+    loop = asyncio.get_event_loop()  # ✅ इसे इस्तेमाल करें
+    loop.run_until_complete(start())  # ✅ अब यह सही चलेगा
