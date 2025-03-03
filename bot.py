@@ -74,8 +74,8 @@ async def healthcheck(request):
     return web.Response(text="Bot is running")
 
 async def start():
-    # Start Pyrogram Bot
-    loop.create_task(app.run())
+    loop = asyncio.get_running_loop()  # ✅ अब loop सही तरीके से डिफाइन हो गया
+    loop.create_task(app.run())  # Pyrogram Bot Start
 
     # Start Web Server (For Koyeb Health Check)
     runner = web.AppRunner(web.Application())
@@ -84,6 +84,5 @@ async def start():
     site = web.TCPSite(runner, "0.0.0.0", 8000)
     await site.start()
 
-# 🔹 Start the Bot
 if __name__ == "__main__":
-    asyncio.run(start())
+    asyncio.run(start())  # ✅ अब loop properly initialize होगा
