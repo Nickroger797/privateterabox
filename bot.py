@@ -1,25 +1,23 @@
+import os
+import asyncio
 import requests
 import re
-import os
 from bs4 import BeautifulSoup
 from pyrogram import Client, filters
+from aiohttp import web
 
-# Telegram Bot Credentials (Replace these values)
-API_ID = int(os.getenv("API_ID"))  # Ensure it's an integer
+# 🔹 Telegram Bot Credentials
+API_ID = int(os.getenv("API_ID"))  
 API_HASH = os.getenv("API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# Bot Initialization
+# 🔹 Initialize Pyrogram Bot
 app = Client("terabox_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# Function to Extract Direct Download Link from TeraBox
+# 🔹 Function to Extract TeraBox Direct Download Link
 def get_terabox_download_link(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36"
-    }
-
-    session = requests.Session()
-    response = session.get(url, headers=headers)
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -27,67 +25,65 @@ def get_terabox_download_link(url):
 
         for script in script_tags:
             if "download" in script.text:
-                match = re.search(r'"(https://[^\s]+?download.*?)"', script.text)
+                match = re.search(r"(https://[^'\"]+download.[^'\"]+)", script.text)
                 if match:
-                    return match.group(1)  # Return direct download link
+                    return match.group(1)
+    
     return None
 
-# Function to Download the File from TeraBox
+# 🔹 Function to Download File
 def download_from_terabox(url):
     download_link = get_terabox_download_link(url)
-    
+
     if not download_link:
         return None
 
-    file_name = "downloaded_file.zip"  # Default filename
+    file_name = "downloaded_file.zip"
     response = requests.get(download_link, stream=True)
 
     with open(file_name, "wb") as f:
         for chunk in response.iter_content(1024):
             f.write(chunk)
 
-    return file_name  # Return the downloaded file path
+    return file_name
 
-# Telegram Bot Handlers
+# 🔹 Telegram Command Handlers
 @app.on_message(filters.command("start"))
-def start(client, message):
-    message.reply_text("👋 Welcome to TeraBox Downloader Bot!\n\nSend me a TeraBox link to download the file.")
+async def start(client, message):
+    await message.reply_text("👋 Welcome to TeraBox Downloader Bot!\n\nSend me a TeraBox link to download the file.")
 
 @app.on_message(filters.text)
-def process_link(client, message):
+async def process_link(client, message):
     url = message.text.strip()
-    
+
     if "terabox.com" in url:
-        message.reply_text("🔍 Processing your link, please wait...")
-        
+        await message.reply_text("🔍 Processing your link, please wait...")
+
         file_path = download_from_terabox(url)
-        
+
         if file_path:
-            message.reply_document(file_path, caption="✅ Here is your downloaded file!")
-            os.remove(file_path)  # Delete the file after sending
+            await message.reply_document(file_path, caption="✅ Here is your downloaded file!")
+            os.remove(file_path)
         else:
-            message.reply_text("❌ Failed to download. Please check the link!")
+            await message.reply_text("❌ Failed to download. Please check the link!")
     else:
-        message.reply_text("❌ Invalid TeraBox link! Please send a valid link.")
+        await message.reply_text("❌ Invalid TeraBox link! Please send a valid link.")
 
-# Start the Bot
-app.run()
-
-import asyncio
-from aiohttp import web
-
+# 🔹 Web Server for Koyeb Health Check
 async def healthcheck(request):
     return web.Response(text="Bot is running")
 
-app = web.Application()
-app.router.add_get("/", healthcheck)
-
 async def start():
-    loop = asyncio.get_event_loop()
-    loop.create_task(client.run())  # Pyrogram Bot Start
-    runner = web.AppRunner(app)
+    # Start Pyrogram Bot
+    loop.create_task(app.run())
+
+    # Start Web Server (For Koyeb Health Check)
+    runner = web.AppRunner(web.Application())
+    runner.app.router.add_get("/", healthcheck)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", 8000)  # Port 8000
+    site = web.TCPSite(runner, "0.0.0.0", 8000)
     await site.start()
 
-asyncio.run(start())
+# 🔹 Start the Bot
+if __name__ == "__main__":
+    asyncio.run(start())
