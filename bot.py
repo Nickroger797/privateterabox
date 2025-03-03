@@ -72,3 +72,22 @@ def process_link(client, message):
 
 # Start the Bot
 app.run()
+
+import asyncio
+from aiohttp import web
+
+async def healthcheck(request):
+    return web.Response(text="Bot is running")
+
+app = web.Application()
+app.router.add_get("/", healthcheck)
+
+async def start():
+    loop = asyncio.get_event_loop()
+    loop.create_task(client.run())  # Pyrogram Bot Start
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8000)  # Port 8000
+    await site.start()
+
+asyncio.run(start())
